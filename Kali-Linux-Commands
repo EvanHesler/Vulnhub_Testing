@@ -1,0 +1,14 @@
+
+Reconissance Commands
+  Sudo netdiscover = tries to scan info like IP, MAC Adress, count, len, and hostnamef current connected network maybe. Ctrl c to exit
+  Sudo nmap ___.___.__/__ = In the blank spot you put the IP address or the longest prefix match. After the / is how many bits are used for idnetifying network
+      -p __,__ = a way to check specific ports using nmap to take less time
+      -v = enables verbose mode meaning more information shown including at time discovery rather than final results.
+      -A = aggressive scan that has most info like ssh keys, however likely to get caughts by IDS
+      -sV = also displays service and version
+      -sS = more secretive scan by doing incomplete threeway handshakes  looks like a loss of package and may not work against a firewall, but avoids IDS
+  Syn scan = 
+  nslookup ____ = using the same thing as the above, this just gives you some info like server, address, name
+
+
+
