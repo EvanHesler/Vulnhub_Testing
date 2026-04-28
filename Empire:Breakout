@@ -1,0 +1,14 @@
+Setup
+  1. Have Kali Linux, virtualbox, and the EmpireBreakout virtual machine downloaded 
+  2. make sure all aspects are extracted and visible to Virtualbox
+  3. In files: import appliance, select the Empire Breakout virtual machine
+  4. in tools: create a NAT network and connect the 2 virtual machines to it
+
+evaluation:
+
+
+related links
+  https://www.vulnhub.com/entry/empire-breakout,751/ 
+  https://www.virtualbox.org/
+  https://www.kali.org/get-kali/#kali-platforms
+
