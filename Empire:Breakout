@@ -5,7 +5,62 @@ Setup
   4. in tools: create a NAT network and connect the 2 virtual machines to it
 
 evaluation:
+    Empire Breakout is a beginner-friendly CTF machine focused on enumeration, source code analysis, and credential discovery. The attack chain involves web reconnaissance, Samba enumeration, and decoding an obfuscated password hidden in plain sight.
 
+Reconnaissance:
+    Port Scan
+    nmap -sV -sC -oN scan.txt 10.0.2.4
+    PortServiceVersion80HTTPApache 2.4.51 (Debian)139NetBIOSSamba smbd 4445SMBSamba smbd 410000HTTPWebmin 1.98120000HTTPUsermin 1.830
+    Five open ports were identified. Ports 10000 and 20000 run Webmin and Usermin respectively, both served over HTTPS with self-signed certificates, this causes a expected behaviour that produces a browser security warning, but its not a dead end.
+
+Web Enumeration — Port 80
+    gobuster dir -u http://10.0.2.4 -w /usr/share/wordlists/dirb/common.txt
+    PathStatus.htpasswd403.htaccess403.hta403index.html200manual/301server-status403
+    The 403 results confirm those files exist but are protected by Apache. No directly exploitable paths were found at this stage.
+
+Source Code Analysis:
+Manual inspection of the Apache default page source revealed a hidden comment hidden at the bottom containing the semi encrypted string:
+don't worry no one will get here, it's safe to share with you my access. Its encrypted :)
+++++++++++[>+>+++>+++++++>++++++++++<<<<-]>>++++++++++++++++.++++.>>+++++++++++++++++.
+----.<++++++++++.-----------.>-----------.++++.<<+.>-.--------.++++++++++++++++++++.
+<------------.>>---------.<<++++++.++++++.
+The string was initially suspected to be a hash, but hashid and hash-identifier returned no matches. Further research identified it as Brainfuck (odd programming language) not actually an encryption scheme.
+
+Decoding:
+    Decoded using dcode.fr/brainfuck-language:
+    the result was .2uqPEfj3D<P'a-3
+
+Samba Enumeration:
+enum4linux -a 10.0.2.4 :
+    Hostname = BREAKOUT
+    Domain = WORKGROUP
+    Samba version = 4.13.5-Debian
+Shares:
+    ShareAccessprint$DeniedIPC$Null session only
+    User discovered via RID cycling:
+    S-1-22-1-1000 Unix User\cyber (Local User)
+The enum4linux output contains three categories of users worth distinguishing:
+    1. Known Usernames (administrator, guest, root, etc.) = these are hardcoded default guesses built into enum4linux, not actually confirmed accounts on the target.
+       nobody = a reserved default system account present on all Linux machines. It has no login shell and is not usable for authentication.
+       cyber = confirmed via RID cycling with RID 1000. On Debian/Linux systems, UID 1000 is assigned to the first human-created user account, meaning this was deliberately set up on the machine and is login-capable.
+    2. Password policy (no lockout) and a minimum password length of 5
+    4. Account lockout threshold = None brute force is possible without risk of lockout
+
+Privilege escalation:
+    With a confirmed username from Samba enumeration and a decoded password from the page source, credentials were tested against Usermin (port 20000) as the most appropriate target for a standard user account.
+    FieldValueUsernamecyberPassword.2uqPEfj3D<P'a-3Targethttps://10.0.2.4:20000
+    Login was successful.
+
+Flag Capture:
+    Access to Usermin provided a command shell interface. Navigation through the user's home directory revealed user.txt, containing the user flag.
+
+Key Takeaways:
+    Always review page source manually — automated scanners cannot read content within pages, only discover paths.
+    Brainfuck and other esoteric languages will not be identified by hash tools. When identification fails, research the character set.
+    RID cycling via enum4linux can confirm real user accounts even when share access is denied.
+    SSL warnings on CTF machines are expected — self-signed certificates are standard for services like Webmin/Usermin and should not be treated as dead ends.
+    UID 1000 on Linux systems reliably indicates the first human-created user account.
+    Automated hash identification tools will not recognise esoteric language encodings. Manual research is essential when tools return no results.
 
 related links
   https://www.vulnhub.com/entry/empire-breakout,751/ 
