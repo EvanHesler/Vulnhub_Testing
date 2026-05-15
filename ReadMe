@@ -1,1 +1,6 @@
-This will be the doccument for general notes and guides for the usage and setup of these attempts
+Setup
+  1. Have Kali Linux, VirtualBox, and the virtual machine OVA downloaded 
+  2. Make sure all aspects are extracted and visible to VirtualBox from your file access
+  3. In files: import appliance, select the Empire Breakout virtual machine (OVA)
+  4. in tools: create a NAT network and connect the 2 virtual machines to it
+
