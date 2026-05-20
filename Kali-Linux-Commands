@@ -1,14 +1,35 @@
+tools:
+  Wireshark = a large-scale form of packet analysis displaying all packets within a connected network  
+  Burp Suite = a more precise form of packet analysis with individual rate limiting of important packets.
+  Gobuster = a command-line-based tool for finding directories of a certain site
+  Dirbuster = a GUI-based tool for finding directories
 
-Reconissance Commands
+
+Reconnaissance Commands
   Sudo netdiscover = tries to scan info like IP, MAC Adress, count, len, and hostnamef current connected network maybe. Ctrl c to exit
   Sudo nmap ___.___.__/__ = In the blank spot you put the IP address or the longest prefix match. After the / is how many bits are used for idnetifying network
       -p __,__ = a way to check specific ports using nmap to take less time
-      -v = enables verbose mode meaning more information shown including at time discovery rather than final results.
+      -v = enables verbose mode, meaning more information is shown, including at time discovery rather than final results.
       -A = aggressive scan that has most info like ssh keys, however likely to get caughts by IDS
       -sV = also displays service and version
       -sS = more secretive scan by doing incomplete threeway handshakes  looks like a loss of package and may not work against a firewall, but avoids IDS
+      -sC = safe scripts to retreive info like public keys, titles, or http methods (Requries testing)
   Syn scan = 
   nslookup ____ = using the same thing as the above, this just gives you some info like server, address, name
+  gobuster dir -u _______ -w __________ = first part is the website link while second is the directory dictionary attack list. It tests this recursively into a site to find what directories it has. Note that if the word list doesnt have it, you dont know what it could be.
+      attack lists:
+          /usr/share/wordlists/dirbuster/directory-list-lowercase-2.3-medium.txt
+          /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+          /usr/share/wordlists/dirb/common.txt
+      -x ___,___ = this helps to specify file types you want to find such as html, txt, php
+  DirBuster = GUI application that does the same thing as gobuster but is less optimized but easier to understand however requires more setup
 
+SQL injection:
+  starting methods:
+      common inputs = Its commom to assume that any login page or equivlant type of input may be a SQL based interaction
+      log analysis = attempting to cause errors in one method involving closing quotations of backend code by putting ' or ; into the input field. (OR '1'='1)
+          
 
+general navigation:
+  http://__.__.__.__ = you can access hosted sites on another machine by putting in the IP address
 
