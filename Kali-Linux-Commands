@@ -28,6 +28,22 @@ SQL injection:
   starting methods:
       common inputs = Its commom to assume that any login page or equivlant type of input may be a SQL based interaction
       log analysis = attempting to cause errors in one method involving closing quotations of backend code by putting ' or ; into the input field. (OR '1'='1)
+  sqlmap -u "____" \ = this is a key command which does sql injection when you specify a taget url which goes in the blank spot
+      --data="___" = used when the situation involves POST requests rather than GET requests, generally structured like "username=x&password=pass". Usually around login, search, API, or post based appps
+      --cookie="___" = represents who you are to the site. Situation is when login is done, there are sessions, or autnetication is a key aspect
+      --user="___" 
+      -p ___ = specifies HTTP parameters used in sql inputs (for example username and password vars in a table). Essentially this focuses your scan
+      --level _ = has a range of 1 to 5 and represents how layered the testing should be. Not including this sets the level to 1
+      --risk _ = has a range of 1 to 3 and represents level of effect it can have from intrusive payloads to modifying data.
+      --batch = automatically answers and prompts brought in the process with default answers
+      --threads __ = how many threads you want to provide to this process
+      --dbs = looks through databases and lists them one by one
+      -D ______  = look in a certain known database. In the blank spot you put the datbaases name.
+          --tables ____ = look through a certain table within the database
+          -T ____ = specifies a certain table to look through
+          --columns = looks through tables to find column names and returns them
+          --dump = general extraction of all info from prior focusing primarily focused on the results mentioend in the scope.
+   
           
 
 general navigation:
